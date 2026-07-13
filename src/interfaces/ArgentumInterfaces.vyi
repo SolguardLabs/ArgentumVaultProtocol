@@ -1,0 +1,53 @@
+# @version ^0.4.3
+
+interface IArgentumVault:
+    def asset() -> address: view
+    def total_assets() -> uint256: view
+    def liquid_assets() -> uint256: view
+    def price_per_share() -> uint256: view
+    def convert_to_assets(shares: uint256) -> uint256: view
+    def convert_to_shares(assets: uint256) -> uint256: view
+    def deposit(assets: uint256, receiver: address) -> uint256: nonpayable
+    def request_withdrawal(shares: uint256, receiver: address) -> uint256: nonpayable
+    def process_epoch(epoch: uint256, max_items: uint256) -> uint256: nonpayable
+    def advance_epoch(): nonpayable
+    def allocate_to_strategy(strategy: address, amount: uint256): nonpayable
+    def note_strategy_return(strategy: address, amount: uint256): nonpayable
+    def report_strategy_loss(strategy: address, amount: uint256): nonpayable
+
+interface IArgentumReservePolicy:
+    def target_reserve(total_assets: uint256) -> uint256: view
+    def reserve_gap(total_assets: uint256, reserve_assets: uint256) -> uint256: view
+    def reserve_surplus(total_assets: uint256, reserve_assets: uint256) -> uint256: view
+    def classify_reserve(total_assets: uint256, reserve_assets: uint256) -> uint256: view
+    def can_draw_reserve(total_assets: uint256, reserve_assets: uint256, draw_amount: uint256) -> bool: view
+    def can_draw_for_epoch(epoch: uint256, total_assets: uint256, reserve_assets: uint256, draw_amount: uint256) -> bool: view
+    def recall_needed_for_epoch(total_assets: uint256, free_liquidity: uint256, reserve_assets: uint256, pending_assets: uint256) -> uint256: view
+
+interface IArgentumRiskController:
+    def check_allocation(strategy: address, total_assets: uint256, strategy_assets_before: uint256, total_strategy_assets_before: uint256, allocation_amount: uint256) -> bool: view
+    def check_liquidity_after_allocation(total_assets: uint256, liquid_assets_before: uint256, allocation_amount: uint256) -> bool: view
+    def check_loss_report(strategy: address, strategy_assets_before: uint256, loss_amount: uint256) -> bool: view
+    def check_epoch_processing(total_assets: uint256, liquid_assets: uint256, pending_assets: uint256) -> bool: view
+    def register_loss(strategy: address, loss_amount: uint256): nonpayable
+    def register_queue_pressure(epoch: uint256, pending_assets: uint256, liquid_assets: uint256): nonpayable
+
+interface IArgentumLens:
+    def vault_accounting(vault: address) -> (uint256, uint256, uint256, uint256, uint256, uint256, uint256): view
+    def vault_supply(vault: address) -> (uint256, uint256, uint256): view
+    def user_position(vault: address, user: address) -> (uint256, uint256, uint256): view
+    def liquidity_ratios(vault: address) -> (uint256, uint256, uint256): view
+    def epoch_summary(vault: address, epoch: uint256) -> (uint256, uint256, uint256, uint256, uint256, uint256, bool, uint256): view
+    def request_summary(vault: address, request_id: uint256) -> (address, address, uint256, uint256, uint256, uint256, uint256, uint256): view
+
+interface IERC20:
+    def name() -> String[64]: view
+    def symbol() -> String[16]: view
+    def decimals() -> uint8: view
+    def totalSupply() -> uint256: view
+    def balanceOf(owner: address) -> uint256: view
+    def allowance(owner: address, spender: address) -> uint256: view
+    def approve(spender: address, amount: uint256) -> bool: nonpayable
+    def transfer(receiver: address, amount: uint256) -> bool: nonpayable
+    def transferFrom(owner: address, receiver: address, amount: uint256) -> bool: nonpayable
+
