@@ -1,0 +1,45 @@
+name: Release integrity
+
+on:
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Resolve release tag
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            tag="$RELEASE_TAG"
+          else
+            tag="$PUSH_TAG"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Verify annotated tag and branch parity
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          git fetch origin main production "refs/tags/$TAG:refs/tags/$TAG" --force
+          test "$(git cat-file -t "refs/tags/$TAG")" = "tag"
+          tag_commit="$(git rev-parse "refs/tags/$TAG^{}")"
+          main_commit="$(git rev-parse origin/main)"
+          production_commit="$(git rev-parse origin/production)"
+          test "$tag_commit" = "$main_commit"
+          test "$tag_commit" = "$production_commit"
+          test "$(git show "$tag_commit:pyproject.toml" | sed -n 's/^version = "\([^"]*\)"/\1/p')" = "${TAG#v}"

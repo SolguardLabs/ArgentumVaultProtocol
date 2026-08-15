@@ -160,7 +160,7 @@ def request_timing(vault: address, request_id: uint256) -> (uint256, uint256, ui
 
 @external
 @view
-def unsafe_premium_bps(vault: address, request_id: uint256) -> uint256:
+def mark_to_market_variance_bps(vault: address, request_id: uint256) -> uint256:
     premium: uint256 = staticcall VaultLike(vault).request_quote_delta(request_id)
     current_value: uint256 = staticcall VaultLike(vault).request_value_at_current_pps(request_id)
     if current_value == 0:

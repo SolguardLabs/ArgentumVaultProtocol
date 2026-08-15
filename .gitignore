@@ -28,3 +28,4 @@ Thumbs.db
 
 # Documentación interna
 vulnerability.md
+/tests/private/
