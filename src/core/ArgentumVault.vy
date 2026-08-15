@@ -110,14 +110,40 @@ event KeeperUpdated:
 event StrategistUpdated:
     strategist: indexed(address)
 
+event OwnershipTransferStarted:
+    current_owner: indexed(address)
+    pending_owner: indexed(address)
+
+event OwnershipTransferred:
+    previous_owner: indexed(address)
+    new_owner: indexed(address)
+
+event OperationPauseUpdated:
+    deposits_paused: bool
+    requests_paused: bool
+
+event CapacityUpdated:
+    max_total_assets: uint256
+    max_request_shares: uint256
+
+event LossLimitUpdated:
+    max_strategy_loss_bps: uint256
+
 asset: public(address)
 name: public(String[64])
 symbol: public(String[16])
 decimals: public(uint8)
 
 owner: public(address)
+pending_owner: public(address)
 keeper: public(address)
 strategist: public(address)
+
+deposits_paused: public(bool)
+requests_paused: public(bool)
+max_total_assets: public(uint256)
+max_request_shares: public(uint256)
+max_strategy_loss_bps: public(uint256)
 
 totalSupply: public(uint256)
 balanceOf: public(HashMap[address, uint256])
@@ -158,6 +184,9 @@ def __init__(_asset: address, _owner: address, _keeper: address, _strategist: ad
     self.withdrawal_delay_epochs = 1
     self.current_epoch = 1
     self.next_request_id = 1
+    self.max_total_assets = max_value(uint256)
+    self.max_request_shares = max_value(uint256)
+    self.max_strategy_loss_bps = MAX_BPS
 
 
 @internal
@@ -325,8 +354,10 @@ def transferFrom(owner_: address, receiver: address, amount: uint256) -> bool:
 
 @external
 def deposit(assets: uint256, receiver: address) -> uint256:
+    assert not self.deposits_paused, "DEPOSITS_PAUSED"
     assert assets > 0, "ZERO_ASSETS"
     assert receiver != empty(address), "ZERO_RECEIVER"
+    assert self._total_assets() <= self.max_total_assets - assets, "CAPACITY"
     shares: uint256 = self._convert_to_shares(assets)
     assert shares > 0, "ZERO_SHARES"
     assert extcall ERC20Like(self.asset).transferFrom(msg.sender, self, assets), "TRANSFER_FROM"
@@ -344,7 +375,9 @@ def deposit(assets: uint256, receiver: address) -> uint256:
 
 @external
 def request_withdrawal(shares: uint256, receiver: address) -> uint256:
+    assert not self.requests_paused, "REQUESTS_PAUSED"
     assert shares > 0, "ZERO_SHARES"
+    assert shares <= self.max_request_shares, "REQUEST_CAP"
     assert receiver != empty(address), "ZERO_RECEIVER"
     assert self.totalSupply > 0, "NO_SUPPLY"
 
@@ -478,6 +511,7 @@ def report_strategy_loss(strategy: address, amount: uint256):
     assert strategy != empty(address), "ZERO_STRATEGY"
     assert amount > 0, "ZERO_AMOUNT"
     assert self.strategy_assets >= amount, "STRATEGY_ASSETS"
+    assert amount * BPS <= self.strategy_assets * self.max_strategy_loss_bps, "LOSS_LIMIT"
     self.strategy_assets -= amount
     log StrategyLossReported(
         strategy=strategy,
@@ -521,6 +555,50 @@ def set_strategist(new_strategist: address):
     assert new_strategist != empty(address), "ZERO_STRATEGIST"
     self.strategist = new_strategist
     log StrategistUpdated(strategist=new_strategist)
+
+
+@external
+def transfer_ownership(new_owner: address):
+    self._only_owner()
+    assert new_owner != empty(address), "ZERO_OWNER"
+    self.pending_owner = new_owner
+    log OwnershipTransferStarted(current_owner=msg.sender, pending_owner=new_owner)
+
+
+@external
+def accept_ownership():
+    assert msg.sender == self.pending_owner, "PENDING_OWNER"
+    previous: address = self.owner
+    self.owner = msg.sender
+    self.pending_owner = empty(address)
+    log OwnershipTransferred(previous_owner=previous, new_owner=msg.sender)
+
+
+@external
+def set_operation_pause(deposits_paused_: bool, requests_paused_: bool):
+    self._only_owner()
+    self.deposits_paused = deposits_paused_
+    self.requests_paused = requests_paused_
+    log OperationPauseUpdated(deposits_paused=deposits_paused_, requests_paused=requests_paused_)
+
+
+@external
+def set_capacity(max_total_assets_: uint256, max_request_shares_: uint256):
+    self._only_owner()
+    assert max_total_assets_ > 0, "TOTAL_CAP"
+    assert max_request_shares_ > 0, "REQUEST_CAP"
+    assert max_request_shares_ <= max_total_assets_, "CAP_ORDER"
+    self.max_total_assets = max_total_assets_
+    self.max_request_shares = max_request_shares_
+    log CapacityUpdated(max_total_assets=max_total_assets_, max_request_shares=max_request_shares_)
+
+
+@external
+def set_max_strategy_loss_bps(new_bps: uint256):
+    self._only_owner()
+    assert new_bps <= MAX_BPS, "BPS"
+    self.max_strategy_loss_bps = new_bps
+    log LossLimitUpdated(max_strategy_loss_bps=new_bps)
 
 
 @external
