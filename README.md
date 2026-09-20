@@ -1,5 +1,11 @@
 # ArgentumVaultProtocol
 
+[![CI](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/ci.yml/badge.svg)](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/ci.yml)
+[![Release integrity](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/release-integrity.yml/badge.svg)](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/release-integrity.yml)
+![Vyper](https://img.shields.io/badge/Vyper-0.4.3-343434)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB)
+![Release](https://img.shields.io/badge/release-v1.0.0-EFE2C6)
+
 ![ArgentumVaultProtocol](./assets/banner.png)
 
 ArgentumVaultProtocol es una infraestructura de tesorería en Vyper para
@@ -8,12 +14,6 @@ reservas internas y capital gestionado por estrategias. El sistema separa la
 contabilidad del vault, las políticas de riesgo, la coordinación operativa y la
 observabilidad para que cada responsabilidad pueda gobernarse y verificarse de
 forma independiente.
-
-[![CI](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/ci.yml/badge.svg)](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/ci.yml)
-[![Release integrity](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/release-integrity.yml/badge.svg)](https://github.com/SolguardLabs/ArgentumVaultProtocol/actions/workflows/release-integrity.yml)
-![Vyper](https://img.shields.io/badge/Vyper-0.4.3-343434)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB)
-![Release](https://img.shields.io/badge/release-v1.0.0-EFE2C6)
 
 ## Arquitectura
 
